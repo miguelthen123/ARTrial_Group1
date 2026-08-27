@@ -15,31 +15,6 @@
     </style>
 
     <script>
-      let activeSequence = [];
-
-      // Re-render lines between active spots in sequence
-      function updateDynamicPaths() {
-        const container = document.querySelector('#lines-container');
-        while (container.firstChild) {
-          container.removeChild(container.firstChild);
-        }
-
-        for (let i = 0; i < activeSequence.length - 1; i++) {
-          const startPos = activeSequence[i].getAttribute('position');
-          const endPos = activeSequence[i + 1].getAttribute('position');
-
-          const lineEntity = document.createElement('a-entity');
-          lineEntity.setAttribute('line', {
-            start: `${startPos.x} ${startPos.y} ${startPos.z}`,
-            end: `${endPos.x} ${endPos.y} ${endPos.z}`,
-            color: '#FFFF00',
-            opacity: 0.95
-          });
-
-          container.appendChild(lineEntity);
-        }
-      }
-
       // Component to handle opening external websites on tap
       AFRAME.registerComponent('url-link', {
         schema: { href: { type: 'string' } },
@@ -53,36 +28,65 @@
         }
       });
 
-      // Component to handle sphere interaction, 3D model, and button visibility
+      // Component to toggle content and automatically project a line to the next spot
       AFRAME.registerComponent('spot-toggle', {
         schema: { 
           model: { type: 'selector' },
-          button: { type: 'selector' }
+          button: { type: 'selector' },
+          nextSpot: { type: 'selector' } // Target spot to auto-connect to
         },
         init: function () {
           const el = this.el;
           const originalColor = el.getAttribute('material').color;
+          let activeLine = null;
 
           el.addEventListener('click', () => {
             const model = this.data.model;
             const button = this.data.button;
-            const index = activeSequence.indexOf(el);
+            const nextSpot = this.data.nextSpot;
+            const container = document.querySelector('#lines-container');
 
-            if (index > -1) {
-              // Deactivate spot, model, and button
-              activeSequence.splice(index, 1);
+            const isActive = el.getAttribute('data-active') === 'true';
+
+            if (isActive) {
+              // Deactivate current spot
+              el.setAttribute('data-active', 'false');
               if (model) model.setAttribute('visible', false);
               if (button) button.setAttribute('visible', false);
               el.setAttribute('material', 'color', originalColor);
+
+              // Remove direction line
+              if (activeLine && activeLine.parentNode) {
+                activeLine.parentNode.removeChild(activeLine);
+                activeLine = null;
+              }
             } else {
-              // Activate spot, model, and button
-              activeSequence.push(el);
+              // Activate current spot
+              el.setAttribute('data-active', 'true');
               if (model) model.setAttribute('visible', true);
               if (button) button.setAttribute('visible', true);
               el.setAttribute('material', 'color', '#FFFF00');
-            }
 
-            updateDynamicPaths();
+              // Automatically generate line pointing to the next target spot
+              if (nextSpot && container) {
+                if (activeLine && activeLine.parentNode) {
+                  activeLine.parentNode.removeChild(activeLine);
+                }
+
+                const startPos = el.getAttribute('position');
+                const endPos = nextSpot.getAttribute('position');
+
+                activeLine = document.createElement('a-entity');
+                activeLine.setAttribute('line', {
+                  start: `${startPos.x} ${startPos.y} ${startPos.z}`,
+                  end: `${endPos.x} ${endPos.y} ${endPos.z}`,
+                  color: '#FFFF00',
+                  opacity: 0.95
+                });
+
+                container.appendChild(activeLine);
+              }
+            }
           });
         }
       });
@@ -115,10 +119,11 @@
         <!-- Dynamic Lines Container -->
         <a-entity id="lines-container"></a-entity>
 
-        <!-- SPOT 1: Church / Clocktower -->
+        <!-- SPOT 1: Church / Clocktower (Points to Spot 2) -->
         <a-sphere 
+          id="spot1"
           class="clickable" 
-          spot-toggle="model: #model1; button: #btn1" 
+          spot-toggle="model: #model1; button: #btn1; nextSpot: #spot2" 
           position="0.2 0.35 0.05" 
           radius="0.06" 
           material="color: #FF4136; opacity: 0.8">
@@ -130,7 +135,6 @@
           scale="0.2 0.2 0.2" 
           visible="false">
         </a-gltf-model>
-        <!-- Button 1 (Positioned below sphere) -->
         <a-plane 
           id="btn1" 
           class="clickable" 
@@ -144,10 +148,11 @@
         </a-plane>
 
 
-        <!-- SPOT 2: Lady with Umbrella -->
+        <!-- SPOT 2: Lady with Umbrella (Points to Spot 3) -->
         <a-sphere 
+          id="spot2"
           class="clickable" 
-          spot-toggle="model: #model2; button: #btn2" 
+          spot-toggle="model: #model2; button: #btn2; nextSpot: #spot3" 
           position="-0.3 0.0 0.05" 
           radius="0.06" 
           material="color: #2ECC40; opacity: 0.8">
@@ -159,7 +164,6 @@
           scale="0.8 0.8 0.8" 
           visible="false">
         </a-gltf-model>
-        <!-- Button 2 (Positioned below sphere) -->
         <a-plane 
           id="btn2" 
           class="clickable" 
@@ -173,10 +177,11 @@
         </a-plane>
 
 
-        <!-- SPOT 3: Archway -->
+        <!-- SPOT 3: Archway (Points to Spot 1) -->
         <a-sphere 
+          id="spot3"
           class="clickable" 
-          spot-toggle="model: #model3; button: #btn3" 
+          spot-toggle="model: #model3; button: #btn3; nextSpot: #spot1" 
           position="0.2 -0.4 0.05" 
           radius="0.06" 
           material="color: #0074D9; opacity: 0.8">
@@ -188,7 +193,6 @@
           scale="0.5 0.5 0.5" 
           visible="false">
         </a-gltf-model>
-        <!-- Button 3 (Positioned below sphere) -->
         <a-plane 
           id="btn3" 
           class="clickable" 
