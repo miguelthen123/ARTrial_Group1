@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Load A-Frame and MindAR -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <script>
+      // Component to toggle 3D model visibility on tap
+      AFRAME.registerComponent('spot-toggle', {
+        schema: { target: { type: 'selector' } },
+        init: function () {
+          this.el.addEventListener('click', () => {
+            const model = this.data.target;
+            const isVisible = model.getAttribute('visible');
+            model.setAttribute('visible', !isVisible);
+          });
+        }
+      });
+    </script>
+  </head>
+  <body style="margin: 0; overflow: hidden;">
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets.mind;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <!-- Preload 3D Models -->
+        <a-asset-item id="glb1" src="./models/model1.glb"></a-asset-item>
+        <a-asset-item id="glb2" src="./models/model2.glb"></a-asset-item>
+        <a-asset-item id="glb3" src="./models/model3.glb"></a-asset-item>
+      </a-assets>
+
+      <!-- Enable raycasting for touch/click interaction -->
+      <a-camera position="0 0 0" look-controls="enabled: false" raycaster="objects: .clickable" cursor="fuse: false; rayOrigin: mouse"></a-camera>
+
+      <!-- Target Image Container (Tracked by Camera) -->
+      <a-entity mindar-image-target="targetIndex: 0">
+
+        <!-- Spot 1: Church / Clocktower (Top Right) -->
+        <a-sphere class="clickable" spot-toggle="target: #model1" position="0.2 0.35 0.05" radius="0.06" material="color: #FF4136; opacity: 0.8"></a-sphere>
+        <a-gltf-model id="model1" src="#glb1" position="0.2 0.35 0.1" scale="0.2 0.2 0.2" visible="false"></a-gltf-model>
+
+        <!-- Spot 2: Lady with Umbrella (Center Left) -->
+        <a-sphere class="clickable" spot-toggle="target: #model2" position="-0.3 0.0 0.05" radius="0.06" material="color: #2ECC40; opacity: 0.8"></a-sphere>
+        <a-gltf-model id="model2" src="#glb2" position="-0.3 0.0 0.1" scale="0.2 0.2 0.2" visible="false"></a-gltf-model>
+
+        <!-- Spot 3: Bottom Archway (Bottom Right) -->
+        <a-sphere class="clickable" spot-toggle="target: #model3" position="0.2 -0.4 0.05" radius="0.06" material="color: #0074D9; opacity: 0.8"></a-sphere>
+        <a-gltf-model id="model3" src="#glb3" position="0.2 -0.4 0.1" scale="0.2 0.2 0.2" visible="false"></a-gltf-model>
+
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
