@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MindAR Interactive Map with Directions</title>
+    <title>MindAR Dynamic Sequence Path</title>
     
     <!-- Load A-Frame and MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -15,10 +15,39 @@
     </style>
 
     <script>
+      // Sequence array to track clicked spheres in order
+      let activeSequence = [];
+
+      // Function to re-render connection lines based on current active order
+      function updateDynamicPaths() {
+        const container = document.querySelector('#lines-container');
+        
+        // Clear all existing line entities
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+
+        // Draw lines sequentially between clicked spots
+        for (let i = 0; i < activeSequence.length - 1; i++) {
+          const startPos = activeSequence[i].getAttribute('position');
+          const endPos = activeSequence[i + 1].getAttribute('position');
+
+          const lineEntity = document.createElement('a-entity');
+          lineEntity.setAttribute('line', {
+            start: `${startPos.x} ${startPos.y} ${startPos.z}`,
+            end: `${endPos.x} ${endPos.y} ${endPos.z}`,
+            color: '#FFFF00',
+            opacity: 0.95
+          });
+
+          container.appendChild(lineEntity);
+        }
+      }
+
+      // Interaction Component
       AFRAME.registerComponent('spot-toggle', {
         schema: { 
-          model: { type: 'selector' },
-          nextPath: { type: 'selector' } // Connected directional line entity
+          model: { type: 'selector' }
         },
         init: function () {
           const el = this.el;
@@ -26,23 +55,22 @@
 
           el.addEventListener('click', () => {
             const model = this.data.model;
-            const path = this.data.nextPath;
+            const index = activeSequence.indexOf(el);
 
-            if (model) {
-              const isVisible = model.getAttribute('visible');
-              const nextState = !isVisible;
-              
-              // 1. Toggle 3D model visibility
-              model.setAttribute('visible', nextState);
-              
-              // 2. Change sphere highlight color
-              el.setAttribute('material', 'color', nextState ? '#FFFF00' : originalColor);
-
-              // 3. Reveal/hide directional line to the next landmark
-              if (path) {
-                path.setAttribute('visible', nextState);
-              }
+            if (index > -1) {
+              // Deactivate if tapped again: remove from sequence
+              activeSequence.splice(index, 1);
+              if (model) model.setAttribute('visible', false);
+              el.setAttribute('material', 'color', originalColor);
+            } else {
+              // Activate: add to sequence
+              activeSequence.push(el);
+              if (model) model.setAttribute('visible', true);
+              el.setAttribute('material', 'color', '#FFFF00');
             }
+
+            // Re-draw lines dynamically
+            updateDynamicPaths();
           });
         }
       });
@@ -72,25 +100,13 @@
       <!-- Tracked Target Container -->
       <a-entity mindar-image-target="targetIndex: 0">
 
-        <!-- DIRECTIONAL PATH 1: Links Spot 1 -> Spot 2 -->
-        <a-entity 
-          id="path12" 
-          line="start: 0.2 0.35 0.05; end: -0.3 0.0 0.05; color: #FFFF00" 
-          visible="false">
-        </a-entity>
+        <!-- Dynamic Lines Container -->
+        <a-entity id="lines-container"></a-entity>
 
-        <!-- DIRECTIONAL PATH 2: Links Spot 2 -> Spot 3 -->
-        <a-entity 
-          id="path23" 
-          line="start: -0.3 0.0 0.05; end: 0.2 -0.4 0.05; color: #FFFF00" 
-          visible="false">
-        </a-entity>
-
-
-        <!-- Spot 1: Church (Reveals Model 1 + Path to Spot 2) -->
+        <!-- Spot 1: Church / Clocktower -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="model: #model1; nextPath: #path12" 
+          spot-toggle="model: #model1" 
           position="0.2 0.35 0.05" 
           radius="0.06" 
           material="color: #FF4136; opacity: 0.8">
@@ -103,10 +119,10 @@
           visible="false">
         </a-gltf-model>
 
-        <!-- Spot 2: Lady with Umbrella (Reveals Model 2 + Path to Spot 3) -->
+        <!-- Spot 2: Lady with Umbrella -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="model: #model2; nextPath: #path23" 
+          spot-toggle="model: #model2" 
           position="-0.3 0.0 0.05" 
           radius="0.06" 
           material="color: #2ECC40; opacity: 0.8">
@@ -115,11 +131,11 @@
           id="model2" 
           src="#glb2" 
           position="-0.3 0.0 0.1" 
-          scale="0.5 0.5 0.5" 
+          scale="0.8 0.8 0.8" 
           visible="false">
         </a-gltf-model>
 
-        <!-- Spot 3: Archway (Final Target) -->
+        <!-- Spot 3: Archway -->
         <a-sphere 
           class="clickable" 
           spot-toggle="model: #model3" 
@@ -131,7 +147,7 @@
           id="model3" 
           src="#glb3" 
           position="0.2 -0.4 0.1" 
-          scale="0.2 0.2 0.2" 
+          scale="0.5 0.5 0.5" 
           visible="false">
         </a-gltf-model>
 
