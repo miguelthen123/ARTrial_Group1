@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AR_Trial Group 1</title>
+    <title>MindAR Interactive Map with External Links</title>
     
     <!-- Load A-Frame and MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -15,19 +15,15 @@
     </style>
 
     <script>
-      // Sequence array to track clicked spheres in order
       let activeSequence = [];
 
-      // Function to re-render connection lines based on current active order
+      // Re-render lines between active spots in sequence
       function updateDynamicPaths() {
         const container = document.querySelector('#lines-container');
-        
-        // Clear all existing line entities
         while (container.firstChild) {
           container.removeChild(container.firstChild);
         }
 
-        // Draw lines sequentially between clicked spots
         for (let i = 0; i < activeSequence.length - 1; i++) {
           const startPos = activeSequence[i].getAttribute('position');
           const endPos = activeSequence[i + 1].getAttribute('position');
@@ -44,10 +40,24 @@
         }
       }
 
-      // Interaction Component
+      // Component to handle opening external websites on tap
+      AFRAME.registerComponent('url-link', {
+        schema: { href: { type: 'string' } },
+        init: function () {
+          this.el.addEventListener('click', (evt) => {
+            evt.stopPropagation(); // Prevent triggering sphere toggle underneath
+            if (this.data.href) {
+              window.open(this.data.href, '_blank');
+            }
+          });
+        }
+      });
+
+      // Component to handle sphere interaction, 3D model, and button visibility
       AFRAME.registerComponent('spot-toggle', {
         schema: { 
-          model: { type: 'selector' }
+          model: { type: 'selector' },
+          button: { type: 'selector' }
         },
         init: function () {
           const el = this.el;
@@ -55,21 +65,23 @@
 
           el.addEventListener('click', () => {
             const model = this.data.model;
+            const button = this.data.button;
             const index = activeSequence.indexOf(el);
 
             if (index > -1) {
-              // Deactivate if tapped again: remove from sequence
+              // Deactivate spot, model, and button
               activeSequence.splice(index, 1);
               if (model) model.setAttribute('visible', false);
+              if (button) button.setAttribute('visible', false);
               el.setAttribute('material', 'color', originalColor);
             } else {
-              // Activate: add to sequence
+              // Activate spot, model, and button
               activeSequence.push(el);
               if (model) model.setAttribute('visible', true);
+              if (button) button.setAttribute('visible', true);
               el.setAttribute('material', 'color', '#FFFF00');
             }
 
-            // Re-draw lines dynamically
             updateDynamicPaths();
           });
         }
@@ -103,10 +115,10 @@
         <!-- Dynamic Lines Container -->
         <a-entity id="lines-container"></a-entity>
 
-        <!-- Spot 1: Church / Clocktower -->
+        <!-- SPOT 1: Church / Clocktower -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="model: #model1" 
+          spot-toggle="model: #model1; button: #btn1" 
           position="0.2 0.35 0.05" 
           radius="0.06" 
           material="color: #FF4136; opacity: 0.8">
@@ -118,11 +130,24 @@
           scale="0.2 0.2 0.2" 
           visible="false">
         </a-gltf-model>
+        <!-- Button 1 (Positioned below sphere) -->
+        <a-plane 
+          id="btn1" 
+          class="clickable" 
+          url-link="href: https://akaswap.com/akaobj/27627" 
+          position="0.2 0.23 0.05" 
+          width="0.28" 
+          height="0.08" 
+          material="color: #111111; opacity: 0.9" 
+          text="value: Visit Site; align: center; color: #FFFFFF; width: 1.2" 
+          visible="false">
+        </a-plane>
 
-        <!-- Spot 2: Lady with Umbrella -->
+
+        <!-- SPOT 2: Lady with Umbrella -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="model: #model2" 
+          spot-toggle="model: #model2; button: #btn2" 
           position="-0.3 0.0 0.05" 
           radius="0.06" 
           material="color: #2ECC40; opacity: 0.8">
@@ -134,11 +159,24 @@
           scale="0.8 0.8 0.8" 
           visible="false">
         </a-gltf-model>
+        <!-- Button 2 (Positioned below sphere) -->
+        <a-plane 
+          id="btn2" 
+          class="clickable" 
+          url-link="href: https://akaswap.com/akaobj/27626" 
+          position="-0.3 -0.12 0.05" 
+          width="0.28" 
+          height="0.08" 
+          material="color: #111111; opacity: 0.9" 
+          text="value: Explore More; align: center; color: #FFFFFF; width: 1.2" 
+          visible="false">
+        </a-plane>
 
-        <!-- Spot 3: Archway -->
+
+        <!-- SPOT 3: Archway -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="model: #model3" 
+          spot-toggle="model: #model3; button: #btn3" 
           position="0.2 -0.4 0.05" 
           radius="0.06" 
           material="color: #0074D9; opacity: 0.8">
@@ -150,6 +188,18 @@
           scale="0.5 0.5 0.5" 
           visible="false">
         </a-gltf-model>
+        <!-- Button 3 (Positioned below sphere) -->
+        <a-plane 
+          id="btn3" 
+          class="clickable" 
+          url-link="href: https://akaswap.com/akaobj/27628" 
+          position="0.2 -0.52 0.05" 
+          width="0.28" 
+          height="0.08" 
+          material="color: #111111; opacity: 0.9" 
+          text="value: View Details; align: center; color: #FFFFFF; width: 1.2" 
+          visible="false">
+        </a-plane>
 
       </a-entity>
     </a-scene>
