@@ -2,44 +2,47 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MindAR Interactive Map</title>
+    <title>MindAR Interactive Map with Directions</title>
     
     <!-- Load A-Frame and MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-      /* Fix mobile pointer pass-through */
       .a-canvas {
         pointer-events: auto !important;
       }
     </style>
 
     <script>
-      // Component to handle tap interaction, visual feedback, and model toggling
       AFRAME.registerComponent('spot-toggle', {
-        schema: { target: { type: 'selector' } },
+        schema: { 
+          model: { type: 'selector' },
+          nextPath: { type: 'selector' } // Connected directional line entity
+        },
         init: function () {
           const el = this.el;
           const originalColor = el.getAttribute('material').color;
 
           el.addEventListener('click', () => {
-            const model = this.data.target;
-            if (!model) {
-              console.error('Target model not found');
-              return;
-            }
+            const model = this.data.model;
+            const path = this.data.nextPath;
 
-            const isVisible = model.getAttribute('visible');
-            const nextState = !isVisible;
-            
-            // 1. Toggle visibility of the 3D model
-            model.setAttribute('visible', nextState);
-            
-            // 2. Visual feedback: turn sphere yellow when active, reset when off
-            el.setAttribute('material', 'color', nextState ? '#FFFF00' : originalColor);
-            
-            console.log(`Toggled ${model.id} visibility to: ${nextState}`);
+            if (model) {
+              const isVisible = model.getAttribute('visible');
+              const nextState = !isVisible;
+              
+              // 1. Toggle 3D model visibility
+              model.setAttribute('visible', nextState);
+              
+              // 2. Change sphere highlight color
+              el.setAttribute('material', 'color', nextState ? '#FFFF00' : originalColor);
+
+              // 3. Reveal/hide directional line to the next landmark
+              if (path) {
+                path.setAttribute('visible', nextState);
+              }
+            }
           });
         }
       });
@@ -54,13 +57,11 @@
       device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <!-- NOTE: Ensure folder names and file extensions match EXACTLY (case-sensitive) -->
         <a-asset-item id="glb1" src="./models/model1.glb"></a-asset-item>
         <a-asset-item id="glb2" src="./models/model2.glb"></a-asset-item>
         <a-asset-item id="glb3" src="./models/model3.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Raycasting Camera Setup for Mobile Touch -->
       <a-camera 
         position="0 0 0" 
         look-controls="enabled: false" 
@@ -71,10 +72,25 @@
       <!-- Tracked Target Container -->
       <a-entity mindar-image-target="targetIndex: 0">
 
-        <!-- Spot 1: Church / Clocktower (Top Right) -->
+        <!-- DIRECTIONAL PATH 1: Links Spot 1 -> Spot 2 -->
+        <a-entity 
+          id="path12" 
+          line="start: 0.2 0.35 0.05; end: -0.3 0.0 0.05; color: #FFFF00" 
+          visible="false">
+        </a-entity>
+
+        <!-- DIRECTIONAL PATH 2: Links Spot 2 -> Spot 3 -->
+        <a-entity 
+          id="path23" 
+          line="start: -0.3 0.0 0.05; end: 0.2 -0.4 0.05; color: #FFFF00" 
+          visible="false">
+        </a-entity>
+
+
+        <!-- Spot 1: Church (Reveals Model 1 + Path to Spot 2) -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="target: #model1" 
+          spot-toggle="model: #model1; nextPath: #path12" 
           position="0.2 0.35 0.05" 
           radius="0.06" 
           material="color: #FF4136; opacity: 0.8">
@@ -87,10 +103,10 @@
           visible="false">
         </a-gltf-model>
 
-        <!-- Spot 2: Lady with Umbrella (Center Left) -->
+        <!-- Spot 2: Lady with Umbrella (Reveals Model 2 + Path to Spot 3) -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="target: #model2" 
+          spot-toggle="model: #model2; nextPath: #path23" 
           position="-0.3 0.0 0.05" 
           radius="0.06" 
           material="color: #2ECC40; opacity: 0.8">
@@ -99,14 +115,14 @@
           id="model2" 
           src="#glb2" 
           position="-0.3 0.0 0.1" 
-          scale="0.2 0.2 0.2" 
+          scale="0.5 0.5 0.5" 
           visible="false">
         </a-gltf-model>
 
-        <!-- Spot 3: Bottom Archway (Bottom Right) -->
+        <!-- Spot 3: Archway (Final Target) -->
         <a-sphere 
           class="clickable" 
-          spot-toggle="target: #model3" 
+          spot-toggle="model: #model3" 
           position="0.2 -0.4 0.05" 
           radius="0.06" 
           material="color: #0074D9; opacity: 0.8">
